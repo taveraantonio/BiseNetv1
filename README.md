@@ -14,6 +14,5 @@ python train.py
 ```
 python test.py
 ```
-
-
-Forked by [this repo](https://github.com/ooooverflow/BiSeNet)
+MLDL 2021 course
+Starting code for the student belonging to the project "Real-time domain adaptation in semantic segmentation"
