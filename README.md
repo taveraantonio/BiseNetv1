@@ -1,4 +1,6 @@
-# BiSeNet
+# MLDL 2021 Course
+## BiseNet
+Starting code for the student belonging to the project "Real-time domain adaptation in semantic segmentation"
 BiSeNet based on pytorch 0.4.1 and python 3.6
 
 ## Dataset  
@@ -14,5 +16,3 @@ python train.py
 ```
 python test.py
 ```
-MLDL 2021 course
-Starting code for the student belonging to the project "Real-time domain adaptation in semantic segmentation"
