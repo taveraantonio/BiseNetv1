@@ -53,8 +53,8 @@ class FeatureFusionModule(torch.nn.Module):
     def __init__(self, num_classes, in_channels):
         super().__init__()
         # self.in_channels = input_1.channels + input_2.channels
-        # resnet101 3328 = 256(from context path) + 1024(from spatial path) + 2048(from spatial path)
-        # resnet18  1024 = 256(from context path) + 256(from spatial path) + 512(from spatial path)
+        # resnet101 3328 = 256(from spatial path) + 1024(from context path) + 2048(from context path)
+        # resnet18  1024 = 256(from spatial path) + 256(from context path) + 512(from context path)
         self.in_channels = in_channels
 
         self.convblock = ConvBlock(in_channels=self.in_channels, out_channels=num_classes, stride=1)
