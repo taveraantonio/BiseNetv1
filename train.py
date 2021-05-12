@@ -196,7 +196,7 @@ def main(params):
 
 if __name__ == '__main__':
     params = [
-        '--num_epochs', '1000',
+        '--num_epochs', '50',
         '--learning_rate', '2.5e-2',
         '--data', './CamVid',
         '--num_workers', '8',
