@@ -196,13 +196,13 @@ def main(params):
 
 if __name__ == '__main__':
     params = [
-        '--num_epochs', '50',
+        '--num_epochs', '1000',
         '--learning_rate', '2.5e-2',
         '--data', './CamVid',
         '--num_workers', '8',
         '--num_classes', '12',
         '--cuda', '0',
-        '--batch_size', '16',
+        '--batch_size', '4',
         '--save_model_path', './checkpoints_18_sgd',
         '--context_path', 'resnet18',  # set resnet18 or resnet101, only support resnet18 and resnet101
         '--optimizer', 'sgd',
