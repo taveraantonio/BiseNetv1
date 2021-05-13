@@ -61,7 +61,7 @@ def val(args, model, dataloader):
         return precision, miou
 
 
-def train(args, model, optimizer, dataloader_train, dataloader_val):
+def train(args, model, optimizer, dataloader_train, dataloader_val, curr_epoch):
     writer = SummaryWriter(comment=''.format(args.optimizer, args.context_path))
     if args.loss == 'dice':
         loss_func = DiceLoss()
@@ -69,7 +69,7 @@ def train(args, model, optimizer, dataloader_train, dataloader_val):
         loss_func = torch.nn.CrossEntropyLoss()
     max_miou = 0
     step = 0
-    for epoch in range(args.num_epochs):
+    for epoch in range(curr_epoch, args.num_epochs):
         lr = poly_lr_scheduler(optimizer, args.learning_rate, iter=epoch, max_iter=args.num_epochs)
         model.train()
         tq = tqdm.tqdm(total=len(dataloader_train) * args.batch_size)
@@ -108,8 +108,12 @@ def train(args, model, optimizer, dataloader_train, dataloader_val):
                 max_miou = miou
                 import os 
                 os.makedirs(args.save_model_path, exist_ok=True)
-                torch.save(model.module.state_dict(),
-                           os.path.join(args.save_model_path, 'best_dice_loss.pth'))
+                state = {
+                    "epoch": epoch,
+                    "model_state": model.module.state_dict(),
+                    "optimizer": optimizer.state_dict()
+                }
+                torch.save(state, os.path.join(args.save_model_path, 'best_dice_loss.pth'))
             writer.add_scalar('epoch/precision_val', precision, epoch)
             writer.add_scalar('epoch/miou val', miou, epoch)
 
@@ -119,7 +123,7 @@ def main(params):
     parser = argparse.ArgumentParser()
     parser.add_argument('--num_epochs', type=int, default=300, help='Number of epochs to train for')
     parser.add_argument('--epoch_start_i', type=int, default=0, help='Start counting epochs from this number')
-    parser.add_argument('--checkpoint_step', type=int, default=100, help='How often to save checkpoints (epochs)')
+    parser.add_argument('--checkpoint_step', type=int, default=10, help='How often to save checkpoints (epochs)')
     parser.add_argument('--validation_step', type=int, default=10, help='How often to perform validation (epochs)')
     parser.add_argument('--dataset', type=str, default="CamVid", help='Dataset you are using.')
     parser.add_argument('--crop_height', type=int, default=720, help='Height of cropped/resized input image to network')
@@ -182,14 +186,20 @@ def main(params):
         print('not supported optimizer \n')
         return None
 
+    curr_epoch = 0
     # load pretrained model if exists
     if args.pretrained_model_path is not None:
         print('load model from %s ...' % args.pretrained_model_path)
-        model.module.load_state_dict(torch.load(args.pretrained_model_path))
+        state = torch.load(os.path.realpath(args.pretrained_model_path))
+        model.module.load_state_dict(state['model_state'])
+        optimizer.load_state_dict(state['optimizer'])
+        curr_epoch = state["epoch"] + 1
+        print(str(curr_epoch - 1) + " already trained")
+        print("start training from epoch " + str(curr_epoch))
         print('Done!')
 
     # train
-    train(args, model, optimizer, dataloader_train, dataloader_val)
+    train(args, model, optimizer, dataloader_train, dataloader_val, curr_epoch)
 
     # val(args, model, dataloader_val, csv_path)
 
@@ -203,9 +213,11 @@ if __name__ == '__main__':
         '--num_classes', '12',
         '--cuda', '0',
         '--batch_size', '8',
-        '--save_model_path', './checkpoints_18_sgd',
-        '--context_path', 'resnet18',  # set resnet18 or resnet101, only support resnet18 and resnet101
+        '--save_model_path', './checkpoints_101_sgd',
+        '--context_path', 'resnet101',  # set resnet18 or resnet101, only support resnet18 and resnet101
         '--optimizer', 'sgd',
+        #'--pretrained_model_path', './checkpoints_101_sgd/best_dice_loss.pth',
+        '--checkpoint_step', '30'
 
     ]
     main(params)
