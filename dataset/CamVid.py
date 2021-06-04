@@ -9,13 +9,16 @@ import numpy as np
 from utils import get_label_info, one_hot_it, RandomCrop, reverse_one_hot, one_hot_it_v11, one_hot_it_v11_dice
 import random
 
+
 def augmentation(image, label):
     # augment images with spatial transformation: Flip, Affine, Rotation, etc...
+
     return image, label
 
 
 def augmentation_pixel(image):
     # augment images with pixel intensity transformation: GaussianBlur, Multiply, etc...
+
     return image
 
 

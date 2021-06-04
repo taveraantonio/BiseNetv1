@@ -4,6 +4,7 @@ from model.build_contextpath import build_contextpath
 import warnings
 warnings.filterwarnings(action='ignore')
 
+
 class ConvBlock(torch.nn.Module):
     def __init__(self, in_channels, out_channels, kernel_size=3, stride=2,padding=1):
         super().__init__()
@@ -14,6 +15,7 @@ class ConvBlock(torch.nn.Module):
     def forward(self, input):
         x = self.conv1(input)
         return self.relu(self.bn(x))
+
 
 class Spatial_path(torch.nn.Module):
     def __init__(self):
@@ -27,6 +29,7 @@ class Spatial_path(torch.nn.Module):
         x = self.convblock2(x)
         x = self.convblock3(x)
         return x
+
 
 class AttentionRefinementModule(torch.nn.Module):
     def __init__(self, in_channels, out_channels):
@@ -76,6 +79,7 @@ class FeatureFusionModule(torch.nn.Module):
         x = torch.mul(feature, x)
         x = torch.add(x, feature)
         return x
+
 
 class BiSeNet(torch.nn.Module):
     def __init__(self, num_classes, context_path):

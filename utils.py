@@ -169,7 +169,7 @@ def fast_hist(a, b, n):
 
 def per_class_iu(hist):
 	epsilon = 1e-5
-	return (np.diag(hist) + epsilon) / (hist.sum(1) + hist.sum(0) - np.diag(hist) + epsilon)
+	return (np.diag(hist)) / (hist.sum(1) + hist.sum(0) - np.diag(hist) + epsilon)
 
 class RandomCrop(object):
 	"""Crop the given PIL Image at a random location.
