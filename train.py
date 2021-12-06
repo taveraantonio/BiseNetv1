@@ -1,7 +1,6 @@
 import argparse
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
-from dataset.CamVid import CamVid
 import os
 from model.build_BiSeNet import BiSeNet
 import torch
@@ -156,24 +155,10 @@ def main(params):
     test_path = os.path.join(args.data, 'test')
     test_label_path = os.path.join(args.data, 'test_labels')
     csv_path = os.path.join(args.data, 'class_dict.csv')
-    dataset_train = CamVid(train_path, train_label_path, csv_path, scale=(args.crop_height, args.crop_width),
-                           loss=args.loss, mode='train')
-    dataloader_train = DataLoader(
-        dataset_train,
-        batch_size=args.batch_size,
-        shuffle=True,
-        num_workers=args.num_workers,
-        drop_last=True,
-        )
-    dataset_val = CamVid(test_path, test_label_path, csv_path, scale=(args.crop_height, args.crop_width),
-                         loss=args.loss, mode='test')
-    dataloader_val = DataLoader(
-        dataset_val,
-        # this has to be 1
-        batch_size=1,
-        shuffle=True,
-        num_workers=args.num_workers
-    )
+    
+    # Define here your dataloaders
+    # dataloader_train
+    # dataloader_val
 
     # build model
     os.environ['CUDA_VISIBLE_DEVICES'] = args.cuda
@@ -208,7 +193,7 @@ if __name__ == '__main__':
     params = [
         '--num_epochs', '1000',
         '--learning_rate', '2.5e-2',
-        '--data', './data/CamVid',
+        '--data', './data/...',
         '--num_workers', '8',
         '--num_classes', '12',
         '--cuda', '0',
