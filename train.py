@@ -130,7 +130,7 @@ def main(params):
     parser.add_argument('--epoch_start_i', type=int, default=0, help='Start counting epochs from this number')
     parser.add_argument('--checkpoint_step', type=int, default=10, help='How often to save checkpoints (epochs)')
     parser.add_argument('--validation_step', type=int, default=10, help='How often to perform validation (epochs)')
-    parser.add_argument('--dataset', type=str, default="CamVid", help='Dataset you are using.')
+    parser.add_argument('--dataset', type=str, default="Cityscapes", help='Dataset you are using.')
     parser.add_argument('--crop_height', type=int, default=720, help='Height of cropped/resized input image to network')
     parser.add_argument('--crop_width', type=int, default=960, help='Width of cropped/resized input image to network')
     parser.add_argument('--batch_size', type=int, default=32, help='Number of images in each batch')
