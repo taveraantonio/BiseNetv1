@@ -1,4 +1,3 @@
-from dataset.CamVid import CamVid
 import torch
 import argparse
 import os
@@ -62,20 +61,8 @@ def main(params):
     parser.add_argument('--loss', type=str, default='dice', help='loss function, dice or crossentropy')
     args = parser.parse_args(params)
 
-    # create dataset and dataloader
-    test_path = os.path.join(args.data, 'test')
-    # test_path = os.path.join(args.data, 'train')
-    test_label_path = os.path.join(args.data, 'test_labels')
-    # test_label_path = os.path.join(args.data, 'train_labels')
-    csv_path = os.path.join(args.data, 'class_dict.csv')
-    dataset = CamVid(test_path, test_label_path, csv_path, scale=(args.crop_height, args.crop_width), mode='test')
-    dataloader = DataLoader(
-        dataset,
-        batch_size=1,
-        shuffle=True,
-        num_workers=4,
-    )
-
+    # create dataset and dataloader here
+   
     # build model
     os.environ['CUDA_VISIBLE_DEVICES'] = args.cuda
     model = BiSeNet(args.num_classes, args.context_path)
@@ -96,7 +83,7 @@ def main(params):
 if __name__ == '__main__':
     params = [
         '--checkpoint_path', 'path/to/ckpt',
-        '--data', '/path/to/CamVid',
+        '--data', '/path/to/data',
         '--cuda', '0',
         '--context_path', 'resnet18',
         '--num_classes', '12'
