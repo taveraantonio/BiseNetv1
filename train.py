@@ -190,7 +190,7 @@ if __name__ == '__main__':
         '--num_classes', '19',
         '--cuda', '0',
         '--batch_size', '8',
-        '--save_model_path', './checkpoints_18_sgd',
+        '--save_model_path', './checkpoints_101_sgd',
         '--context_path', 'resnet101',  # set resnet18 or resnet101, only support resnet18 and resnet101
         '--optimizer', 'sgd',
 
