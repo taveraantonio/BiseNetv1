@@ -6,10 +6,10 @@ BiSeNet based on pytorch 0.4.1 and python 3.6
 
 ## Train
 ```
-python train.py
-```  
+from google.colab import drive
+drive.mount('/content/drive')
 
-## Test
-```
-python test.py
-```
+%cd /content/drive/MyDrive/BiSeNet
+!pip install tensorboardX
+!python train.py
+```  

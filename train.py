@@ -47,17 +47,12 @@ def val(args, model, dataloader):
             precision_record.append(precision)
         
         precision = np.mean(precision_record)
-        # miou = np.mean(per_class_iu(hist))
-        miou_list = per_class_iu(hist)[:-1]
-        # miou_dict, miou = cal_miou(miou_list, csv_path)
+        miou_list = per_class_iu(hist)
         miou = np.mean(miou_list)
         print('precision per pixel for test: %.3f' % precision)
         print('mIoU for validation: %.3f' % miou)
-        # miou_str = ''
-        # for key in miou_dict:
-        #     miou_str += '{}:{},\n'.format(key, miou_dict[key])
-        # print('mIoU for each class:')
-        # print(miou_str)
+        print(f'mIoU per class: {miou_list}')
+
         return precision, miou
 
 
@@ -69,7 +64,7 @@ def train(args, model, optimizer, dataloader_train, dataloader_val):
     if args.loss == 'dice':
         loss_func = DiceLoss()
     elif args.loss == 'crossentropy':
-        loss_func = torch.nn.CrossEntropyLoss()
+        loss_func = torch.nn.CrossEntropyLoss(ignore_index=255)
     max_miou = 0
     step = 0
     for epoch in range(args.num_epochs):
@@ -131,9 +126,9 @@ def main(params):
     parser.add_argument('--checkpoint_step', type=int, default=10, help='How often to save checkpoints (epochs)')
     parser.add_argument('--validation_step', type=int, default=10, help='How often to perform validation (epochs)')
     parser.add_argument('--dataset', type=str, default="Cityscapes", help='Dataset you are using.')
-    parser.add_argument('--crop_height', type=int, default=720, help='Height of cropped/resized input image to network')
-    parser.add_argument('--crop_width', type=int, default=960, help='Width of cropped/resized input image to network')
-    parser.add_argument('--batch_size', type=int, default=32, help='Number of images in each batch')
+    parser.add_argument('--crop_height', type=int, default=512, help='Height of cropped/resized input image to network')
+    parser.add_argument('--crop_width', type=int, default=1024, help='Width of cropped/resized input image to network')
+    parser.add_argument('--batch_size', type=int, default=2, help='Number of images in each batch')
     parser.add_argument('--context_path', type=str, default="resnet101",
                         help='The context path model you are using, resnet18, resnet101.')
     parser.add_argument('--learning_rate', type=float, default=0.01, help='learning rate used for train')
@@ -145,20 +140,17 @@ def main(params):
     parser.add_argument('--pretrained_model_path', type=str, default=None, help='path to pretrained model')
     parser.add_argument('--save_model_path', type=str, default=None, help='path to save model')
     parser.add_argument('--optimizer', type=str, default='rmsprop', help='optimizer, support rmsprop, sgd, adam')
-    parser.add_argument('--loss', type=str, default='dice', help='loss function, dice or crossentropy')
+    parser.add_argument('--loss', type=str, default='crossentropy', help='loss function, dice or crossentropy')
 
     args = parser.parse_args(params)
 
-    # create dataset and dataloader
-    train_path = [os.path.join(args.data, 'train'), os.path.join(args.data, 'val')]
-    train_label_path = [os.path.join(args.data, 'train_labels'), os.path.join(args.data, 'val_labels')]
-    test_path = os.path.join(args.data, 'test')
-    test_label_path = os.path.join(args.data, 'test_labels')
-    csv_path = os.path.join(args.data, 'class_dict.csv')
-    
-    # Define here your dataloaders
-    # dataloader_train
-    # dataloader_val
+    # Create HERE datasets instance
+    # dataset_train =
+    # dataset_val =
+
+    # Define HERE your dataloaders:
+    # dataloader_train = ...
+    # dataloader_val = ...
 
     # build model
     os.environ['CUDA_VISIBLE_DEVICES'] = args.cuda
@@ -185,8 +177,8 @@ def main(params):
 
     # train
     train(args, model, optimizer, dataloader_train, dataloader_val)
-
-    # val(args, model, dataloader_val, csv_path)
+    # final test
+    val(args, model, dataloader_val)
 
 
 if __name__ == '__main__':
@@ -195,11 +187,11 @@ if __name__ == '__main__':
         '--learning_rate', '2.5e-2',
         '--data', './data/...',
         '--num_workers', '8',
-        '--num_classes', '12',
+        '--num_classes', '19',
         '--cuda', '0',
         '--batch_size', '8',
         '--save_model_path', './checkpoints_18_sgd',
-        '--context_path', 'resnet18',  # set resnet18 or resnet101, only support resnet18 and resnet101
+        '--context_path', 'resnet101',  # set resnet18 or resnet101, only support resnet18 and resnet101
         '--optimizer', 'sgd',
 
     ]
