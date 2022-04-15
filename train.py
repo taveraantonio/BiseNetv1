@@ -12,9 +12,34 @@ from utils import reverse_one_hot, compute_global_accuracy, fast_hist, \
     per_class_iu
 from loss import DiceLoss
 import torch.cuda.amp as amp
+import wandb
+import utils
 
+# wrapper for logging masks to W&B
+def wb_mask(bg_img, pred_mask=[], true_mask=[]):
+  masks = {}
+  if len(pred_mask) > 0:
+    masks["prediction"] = {"mask_data" : pred_mask}
+  if len(true_mask) > 0:
+    masks["ground truth"] = {"mask_data" : true_mask}
+  return wandb.Image(bg_img, masks=masks, 
+    classes=wandb.Classes([{'name': name, 'id': id} 
+      for name, id in zip(utils.CLASSES, utils.IDS)]))
 
-def val(args, model, dataloader):
+def val(args, model, dataloader, final_test):
+    # init wandb artifacts
+    # save validation predictions, create a new version of the artifact for each epoch
+    val_res_at = wandb.Artifact("val_pred_" + wandb.run.id, "val_epoch_preds")
+    # store all final results in a single artifact across experiments and
+    # model variants to easily compare predictions
+    final_model_res_at = wandb.Artifact("bisenet_pred", "model_preds")
+    main_columns = ["prediction", "ground_truth"]
+    # we'll track the IOU for each class
+    main_columns.extend(["iou_" + s for s in utils.CLASSES])
+    # create tables
+    val_table = wandb.Table(columns=main_columns)
+    model_res_table = wandb.Table(columns=main_columns)
+    
     print('start val!')
     # label_info = get_label_info(csv_path)
     with torch.no_grad():
@@ -39,12 +64,20 @@ def val(args, model, dataloader):
 
             # compute per pixel accuracy
             precision = compute_global_accuracy(predict, label)
-            hist += fast_hist(label.flatten(), predict.flatten(), args.num_classes)
+            current_hist = fast_hist(label.flatten(), predict.flatten(), args.num_classes)
+            hist += current_hist
 
             # there is no need to transform the one-hot array to visual RGB array
             # predict = colour_code_segmentation(np.array(predict), label_info)
             # label = colour_code_segmentation(np.array(label), label_info)
             precision_record.append(precision)
+            
+            # add row to the wandb table
+            row = [wb_mask(data, pred_mask=predict), wb_mask(data, true_mask=label)]
+            row.extend(per_class_iu(current_hist))
+            val_table.add_data(*row)
+            if final_test == True:
+                model_res_table.add_data(*row)
         
         precision = np.mean(precision_record)
         miou_list = per_class_iu(hist)
@@ -52,6 +85,13 @@ def val(args, model, dataloader):
         print('precision per pixel for test: %.3f' % precision)
         print('mIoU for validation: %.3f' % miou)
         print(f'mIoU per class: {miou_list}')
+        
+        # upload wandb table
+        val_res_at.add(val_table, "val_epoch_results")
+        wandb.run.log_artifact(val_res_at)
+        if final_test == True:
+            final_model_res_at.add(model_res_table, "model_results")
+            wandb.run.log_artifact(final_model_res_at)
 
         return precision, miou
 
@@ -107,7 +147,7 @@ def train(args, model, optimizer, dataloader_train, dataloader_val):
                        os.path.join(args.save_model_path, 'latest_dice_loss.pth'))
 
         if epoch % args.validation_step == 0 and epoch != 0:
-            precision, miou = val(args, model, dataloader_val)
+            precision, miou = val(args, model, dataloader_val, False)
             if miou > max_miou:
                 max_miou = miou
                 import os 
@@ -175,10 +215,23 @@ def main(params):
         model.module.load_state_dict(torch.load(args.pretrained_model_path))
         print('Done!')
 
+    # wandb logging init
+    wandb.login()
+    run = wandb.init(project=utils.WANDB_PROJECT, entity=utils.WANDB_ENTITY, job_type="train", config=args)
+    
     # train
     train(args, model, optimizer, dataloader_train, dataloader_val)
     # final test
-    val(args, model, dataloader_val)
+    val(args, model, dataloader_val, True)
+    
+    # save model in wandb and close connection
+    model_name = "trained_bisenet"
+    saved_model = wandb.Artifact(model_name, type="model")
+    saved_model.add_file(os.path.join(args.save_model_path, 'best_dice_loss.pth'), name=model_name)
+    print("Saving data to WandB...")
+    run.log_artifact(saved_model)
+    run.finish()
+    print("... Run Complete")
 
 
 if __name__ == '__main__':
