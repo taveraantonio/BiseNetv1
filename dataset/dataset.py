@@ -98,7 +98,9 @@ class Cityscapes(Dataset):
         """
         if self.preproc_ is not True:
             self.__preprocess__()
-        with open(os.listdir(f'{self.path}{sep}{section}{sep}{mode}{sep}')[index], 'rb') as f:
+        dir = f'{self.path}{sep}{section}{sep}{mode}{sep}'
+        name = os.listdir(dir)[index]
+        with open(dir+name, 'rb') as f:
             t = pickle.load(f)
         return t
 
