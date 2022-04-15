@@ -8,6 +8,15 @@ import random
 import numbers
 import torchvision
 
+CLASSES = [
+  'road', 'sidewalk', 'building', 'wall', 'fence', 'pole', 'light', 'sign', 
+  'vegetation', 'terrain', 'sky', 'person', 'rider', 'car', 'truck', 'bus', 
+  'train', 'motocycle', 'bicycle', 'void'
+]
+IDS = list(range(len(CLASSES) - 1)) + [255]
+WANDB_PROJECT = "bisenet"
+WANDB_ENTITY = "spaghetti-code"
+
 def poly_lr_scheduler(optimizer, init_lr, iter, lr_decay_iter=1,
                       max_iter=300, power=0.9):
 	"""Polynomial decay of learning rate
