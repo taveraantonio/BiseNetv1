@@ -52,7 +52,7 @@ def images_to_tensors(path):
             image_name = line.split('/')[1]
             img = Image.open(f'{path}{sep}images{sep}{image_name}')
             # downsize image and to tensor
-            img_tensor = img_transformer(img).cuda()
+            img_tensor = img_transformer(img).to(torch.float16).cuda()
             # pickle dump
             image_name = image_name.replace('.png', '.pkl')
             with open(f'{path}{sep}{task}{sep}images{sep}{image_name}', 'wb') as fb:
@@ -61,7 +61,7 @@ def images_to_tensors(path):
             label_name = line.split('/')[1].replace('leftImg8bit', 'gtFine_labelIds')
             label = Image.open(f'{path}{sep}labels{sep}{label_name}')
             # downsize label, mapping labels, to tensor
-            label_tensor = lbl_transformer(label).cuda()
+            label_tensor = lbl_transformer(label).to(torch.float16).cuda()
             label_name = label_name.replace('.png', '.pkl')
             # pickle dump
             with open(f'{path}{sep}{task}{sep}labels{sep}{label_name}', 'wb') as fb:
@@ -85,3 +85,6 @@ class Cityscapes(Dataset):
 
     def __len__(self):
         return len(os.listdir(self.img_dir))
+
+if __name__ == '__main__':
+    images_to_tensors('/home/mveronesi/Dropbox/MLDL/data/Cityscapes')
