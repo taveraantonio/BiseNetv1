@@ -1,9 +1,9 @@
 import argparse
-from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 import os
 from model.build_BiSeNet import BiSeNet
 import torch
+from dataset import dataset
 from tensorboardX import SummaryWriter
 from tqdm import tqdm
 import numpy as np
@@ -185,12 +185,12 @@ def main(params):
     args = parser.parse_args(params)
 
     # Create HERE datasets instance
-    # dataset_train =
-    # dataset_val =
+    dataset_train = dataset.Cityscapes('/content/drive/MyDrive/MLDL/Cityscapes/train')
+    dataset_val = dataset.Cityscapes('/content/drive/MyDrive/MLDL/Cityscapes/val')
 
     # Define HERE your dataloaders:
-    # dataloader_train = ...
-    # dataloader_val = ...
+    dataloader_train = DataLoader(dataset_train, batch_size=4, shuffle=True, workers=4)
+    dataloader_val = DataLoader(dataset_val, batch_size=4, shuffle=True, workers=4)
 
     # build model
     os.environ['CUDA_VISIBLE_DEVICES'] = args.cuda
