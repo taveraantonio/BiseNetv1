@@ -1,10 +1,10 @@
 from torch.utils.data import Dataset
 from PIL import Image
-import pickle
 import os
 import numpy as np
 import torchvision.transforms as T
 import json
+import torch
 sep = os.path.sep
 
 def images_to_tensors(path):
@@ -56,7 +56,7 @@ def images_to_tensors(path):
             # pickle dump
             image_name = image_name.replace('.png', '.pkl')
             with open(f'{path}{sep}{task}{sep}images{sep}{image_name}', 'wb') as fb:
-                pickle.dump(img_tensor, fb)
+                torch.save(img_tensor, fb)
             # open label
             label_name = line.split('/')[1].replace('leftImg8bit', 'gtFine_labelIds')
             label = Image.open(f'{path}{sep}labels{sep}{label_name}')
@@ -65,7 +65,7 @@ def images_to_tensors(path):
             label_name = label_name.replace('.png', '.pkl')
             # pickle dump
             with open(f'{path}{sep}{task}{sep}labels{sep}{label_name}', 'wb') as fb:
-                pickle.dump(label_tensor, fb)
+                torch.save(label_tensor, fb)
 
 
 class Cityscapes(Dataset):
@@ -78,9 +78,9 @@ class Cityscapes(Dataset):
         img_name = os.listdir(self.img_dir)[index]
         lbl_name = os.listdir(self.lbl_dir)[index]
         with open(self.img_dir+img_name, 'rb') as f:
-            img = pickle.load(f)
+            img = torch.load(f)
         with open(self.lbl_dir+lbl_name, 'rb') as f:
-            lbl = pickle.load(f)
+            lbl = torch.load(f)
         return img, lbl
 
     def __len__(self):
