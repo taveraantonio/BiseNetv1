@@ -85,6 +85,3 @@ class Cityscapes(Dataset):
 
     def __len__(self):
         return len(os.listdir(self.img_dir))
-
-if __name__ == '__main__':
-    images_to_tensors('/home/mveronesi/Dropbox/MLDL/data/Cityscapes')
