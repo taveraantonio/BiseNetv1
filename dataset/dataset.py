@@ -69,54 +69,19 @@ def images_to_tensors(path):
 
 
 class Cityscapes(Dataset):
-    """
-    Load a dataset transformed with the function images_to_tensors,
-    i.e., two folders, one with all GPU torch tensors representing images and
-    one for labels.
-    """
-    def __init__(self, path, preproc):
-        """
-        Input:
-        - path: the root folder of the dataset
-        - converted is True iff the dataset items have been already pre-processed
-        """
+    def __init__(self, path):
         self.path = path
-        self.preproc_ = preproc
-        if preproc == True:
-            self.train_size = len(os.listdir(f'{self.path}{sep}train{sep}images{sep}'))
-            self.val_size = len(os.listdir(f'{self.path}{sep}val{sep}images{sep}'))
-        else:
-            self.train_size = 0
-            self.val_size = 0
-
-    def __preprocess__(self):
-        images_to_tensors(self.path)
-        self.preproc_ = True
-        self.train_size = len(os.listdir(f'{self.path}{sep}train{sep}images{sep}'))
-        self.val_size = len(os.listdir(f'{self.path}{sep}val{sep}images{sep}'))
+        self.img_dir = f'{self.path}{sep}images{sep}'
+        self.lbl_dir = f'{self.path}{sep}labels{sep}'
 
     def __getitem__(self, index):
-        """
-        Input:
-        - index: the index of the item/label to be returned
-        - section: string in ['train', 'val']
-        - mode: string in ['images', 'labels']
-        Output:
-        - the cuda tensor associated to that item/label
-        """
-        if self.preproc_ != True:
-            self.__preprocess__()
-        section = 'train' if index < self.train_size else 'val'
-        index = index if index < self.train_size else index-self.train_size
-        img_dir = f'{self.path}{sep}{section}{sep}images{sep}'
-        lbl_dir = f'{self.path}{sep}{section}{sep}labels{sep}'
-        img_name = os.listdir(img_dir)[index]
-        lbl_name = os.listdir(lbl_dir)[index]
-        with open(img_dir+img_name, 'rb') as f:
+        img_name = os.listdir(self.img_dir)[index]
+        lbl_name = os.listdir(self.lbl_dir)[index]
+        with open(self.img_dir+img_name, 'rb') as f:
             img = pickle.load(f)
-        with open(lbl_dir+lbl_name, 'rb') as f:
+        with open(self.lbl_dir+lbl_name, 'rb') as f:
             lbl = pickle.load(f)
         return img, lbl
 
     def __len__(self):
-        return self.train_size + self.val_size
+        return len(os.listdir(self.img_dir))
