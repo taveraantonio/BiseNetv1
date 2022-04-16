@@ -82,12 +82,20 @@ class Cityscapes(Dataset):
         """
         self.path = path
         self.preproc_ = preproc
+        if preproc == True:
+            self.train_size = len(os.listdir(f'{self.path}{sep}train{sep}images{sep}'))
+            self.val_size = len(os.listdir(f'{self.path}{sep}val{sep}images{sep}'))
+        else:
+            self.train_size = 0
+            self.val_size = 0
 
     def __preprocess__(self):
         images_to_tensors(self.path)
         self.preproc_ = True
+        self.train_size = len(os.listdir(f'{self.path}{sep}train{sep}images{sep}'))
+        self.val_size = len(os.listdir(f'{self.path}{sep}val{sep}images{sep}'))
 
-    def __getitem__(self, index, section, mode):
+    def __getitem__(self, index):
         """
         Input:
         - index: the index of the item/label to be returned
@@ -96,18 +104,19 @@ class Cityscapes(Dataset):
         Output:
         - the cuda tensor associated to that item/label
         """
-        if self.preproc_ is not True:
+        if self.preproc_ != True:
             self.__preprocess__()
-        dir = f'{self.path}{sep}{section}{sep}{mode}{sep}'
-        name = os.listdir(dir)[index]
-        with open(dir+name, 'rb') as f:
-            t = pickle.load(f)
-        return t
+        section = 'train' if index < self.train_size else 'val'
+        index = index if index < self.train_size else index-self.train_size
+        img_dir = f'{self.path}{sep}{section}{sep}images{sep}'
+        lbl_dir = f'{self.path}{sep}{section}{sep}labels{sep}'
+        img_name = os.listdir(img_dir)[index]
+        lbl_name = os.listdir(lbl_dir)[index]
+        with open(img_dir+img_name, 'rb') as f:
+            img = pickle.load(f)
+        with open(lbl_dir+lbl_name, 'rb') as f:
+            lbl = pickle.load(f)
+        return img, lbl
 
-    def __len__(self, section):
-        """
-        Input:
-        - section: string in ['train', 'val']
-        Output: the number of items in that section
-        """
-        return len(os.listdir(f'{self.path}{sep}{section}{sep}images{sep}'))
+    def __len__(self):
+        return self.train_size + self.val_size
