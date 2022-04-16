@@ -189,8 +189,8 @@ def main(params):
     dataset_val = dataset.Cityscapes('/content/drive/MyDrive/MLDL/Cityscapes/val')
 
     # Define HERE your dataloaders:
-    dataloader_train = DataLoader(dataset_train, batch_size=4, shuffle=True, workers=4)
-    dataloader_val = DataLoader(dataset_val, batch_size=4, shuffle=True, workers=4)
+    dataloader_train = DataLoader(dataset_train, batch_size=4, shuffle=True, num_workers=4)
+    dataloader_val = DataLoader(dataset_val, batch_size=4, shuffle=True, num_workers=4)
 
     # build model
     os.environ['CUDA_VISIBLE_DEVICES'] = args.cuda
