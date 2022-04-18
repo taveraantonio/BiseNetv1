@@ -4,84 +4,61 @@ import os
 import numpy as np
 import torchvision.transforms as T
 import json
-import torch
-sep = os.path.sep
-
-def images_to_tensors(path):
-    """
-    Converts all images and labels:
-    - Downsize images to 1024x512 px
-    - Convert labels to the proper format
-    - Convert transformed images and labels to torch tensors
-    - Save all tensors with pickle, dividing them in train and val folders accordingly to
-      the txt files
-    Input:
-    - path: the root folder of the dataset
-    - cuda: if True the function will send tensors to cuda device
-    """
-    # loading dictionary for mapping classes
-    with open(f'{path}{sep}info.json', 'r') as f:
-        labels_map = np.array(json.load(f)['label2train'], dtype=int)[:, 1]
-    map_values = lambda x: labels_map[x]
-    image_to_numpy = lambda image: map_values(np.array(image))
-    lbl_transformer = T.Compose([
-        T.Resize((512, 1024)),
-        T.Lambda(image_to_numpy),
-        T.ToTensor()
-    ])
-    img_transformer = T.Compose([
-        T.Resize((512, 1024)),
-        T.PILToTensor()
-    ])
-    output_paths = [
-        f'{path}{sep}train{sep}images{sep}',
-        f'{path}{sep}val{sep}images{sep}',
-        f'{path}{sep}train{sep}labels{sep}',
-        f'{path}{sep}val{sep}labels{sep}'
-    ]
-    for output_path in output_paths:
-        if not os.path.exists(output_path):
-            os.makedirs(output_path)
-
-    for task in ['train', 'val']:
-        with open(f'{path}{sep}{task}.txt', 'r') as f:
-            lines = f.readlines()
-        for line in lines:
-            line = line[:-1]
-            # open image
-            image_name = line.split('/')[1]
-            img = Image.open(f'{path}{sep}images{sep}{image_name}')
-            # downsize image and to tensor
-            img_tensor = img_transformer(img).to(torch.float16).cuda()
-            # pickle dump
-            image_name = image_name.replace('.png', '.pkl')
-            with open(f'{path}{sep}{task}{sep}images{sep}{image_name}', 'wb') as fb:
-                torch.save(img_tensor, fb)
-            # open label
-            label_name = line.split('/')[1].replace('leftImg8bit', 'gtFine_labelIds')
-            label = Image.open(f'{path}{sep}labels{sep}{label_name}')
-            # downsize label, mapping labels, to tensor
-            label_tensor = lbl_transformer(label).to(torch.float16).cuda()
-            label_name = label_name.replace('.png', '.pkl')
-            # pickle dump
-            with open(f'{path}{sep}{task}{sep}labels{sep}{label_name}', 'wb') as fb:
-                torch.save(label_tensor, fb)
 
 
 class Cityscapes(Dataset):
-    def __init__(self, path):
+    def __init__(self, path, image_size, task, device):
+        """
+        Inputs:
+        - path: the base folder of the dataset
+        - image_size: a tuple indicating the resizing for the image in the format (Height, Width)
+        - task: a string in ['train', 'val']
+        - device: a string in ['cpu', 'cuda']
+        """
         self.path = path
-        self.img_dir = f'{self.path}{sep}images{sep}'
-        self.lbl_dir = f'{self.path}{sep}labels{sep}'
+        self.image_size = image_size
+        self.task = task
+        self.device = device
+        self.load_labels_map()
+        self.load_transformers()
+        self.load_paths()
 
+    def load_labels_map(self):
+        with open(os.path.join(self.path, 'info.json'), 'r') as f:
+            j = json.load(f)
+        self.labels_map = np.array(j['label2train'], dtype=np.uint8)[:, 1]
+        self.nb_classes = int(j['classes'])
+        self.labels_map[self.labels_map == 255] = self.nb_classes
+
+    def load_transformers(self):
+        image_to_numpy = lambda image: self.labels_map[np.array(image, dtype=np.uint8)].flatten()
+        one_hot_targets = np.vstack((np.eye(self.nb_classes, dtype=np.uint8), np.zeros(self.nb_classes, dtype=np.uint8)))
+        one_hot_encorder = lambda array: one_hot_targets[(array.flatten())]
+        self.lbl_transformer = T.Compose([
+            T.Resize((512, 1024)),
+            T.Lambda(image_to_numpy),
+            T.Lambda(one_hot_encorder),
+            T.ToTensor()
+        ])
+        self.img_transformer = T.Compose([
+            T.Resize(self.image_size),
+            T.PILToTensor()
+        ])
+
+    def load_paths(self):
+        format_path = lambda path: path.split('/')[1][:-1]
+        with open(os.path.join(self.path, f'{self.task}.txt')) as f:
+            self.img_entry_names = [format_path(i) for i in f.readlines()]
+            self.lbl_entry_names = [i.replace('leftImg8bit', 'gtFine_labelIds') for i in self.img_entry_names]
+    
     def __getitem__(self, index):
-        img_name = os.listdir(self.img_dir)[index]
-        lbl_name = os.listdir(self.lbl_dir)[index]
-        with open(self.img_dir+img_name, 'rb') as f:
-            img = torch.load(f)
-        with open(self.lbl_dir+lbl_name, 'rb') as f:
-            lbl = torch.load(f)
+        img_file_name = self.img_entry_names[index]
+        lbl_file_name = self.lbl_entry_names[index]
+        img_path = os.path.join(self.path, 'images', img_file_name)
+        lbl_path = os.path.join(self.path, 'labels', lbl_file_name)
+        img = self.img_transformer(Image.open(img_path)).to(self.device)
+        lbl = self.lbl_transformer(Image.open(lbl_path)).to(self.device)
         return img, lbl
 
     def __len__(self):
-        return len(os.listdir(self.img_dir))
+        return len(self.img_entry_names)
