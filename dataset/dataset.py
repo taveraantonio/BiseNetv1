@@ -32,9 +32,9 @@ class Cityscapes(Dataset):
         self.labels_map[self.labels_map == 255] = self.nb_classes
 
     def load_transformers(self):
-        image_to_numpy = lambda image: self.labels_map[np.array(image, dtype=np.uint8)].flatten()
+        image_to_numpy = lambda image: self.labels_map[np.array(image, dtype=np.uint8)]
         one_hot_targets = np.vstack((np.eye(self.nb_classes, dtype=np.uint8), np.zeros(self.nb_classes, dtype=np.uint8)))
-        one_hot_encorder = lambda array: one_hot_targets[(array.flatten())]
+        one_hot_encorder = lambda array: one_hot_targets[array]
         self.lbl_transformer = T.Compose([
             T.Resize((512, 1024)),
             T.Lambda(image_to_numpy),
@@ -63,3 +63,4 @@ class Cityscapes(Dataset):
 
     def __len__(self):
         return len(self.img_entry_names)
+
