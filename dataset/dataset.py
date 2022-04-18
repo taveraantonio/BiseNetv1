@@ -33,12 +33,9 @@ class Cityscapes(Dataset):
 
     def load_transformers(self):
         image_to_numpy = lambda image: self.labels_map[np.array(image, dtype=np.uint8)]
-        one_hot_targets = np.vstack((np.eye(self.nb_classes, dtype=np.uint8), np.zeros(self.nb_classes, dtype=np.uint8)))
-        one_hot_encorder = lambda array: one_hot_targets[array]
         self.lbl_transformer = T.Compose([
             T.Resize((512, 1024)),
             T.Lambda(image_to_numpy),
-            T.Lambda(one_hot_encorder),
             T.ToTensor()
         ])
         self.img_transformer = T.Compose([
@@ -58,7 +55,7 @@ class Cityscapes(Dataset):
         img_path = os.path.join(self.path, 'images', img_file_name)
         lbl_path = os.path.join(self.path, 'labels', lbl_file_name)
         img = self.img_transformer(Image.open(img_path)).to(torch.float32).to(self.device)
-        lbl = self.lbl_transformer(Image.open(lbl_path)).to(torch.float32).to(self.device)
+        lbl = self.lbl_transformer(Image.open(lbl_path)).to(torch.float32).to(self.device)[0]
         return img, lbl
 
     def __len__(self):
