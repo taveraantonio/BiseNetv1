@@ -4,6 +4,7 @@ import os
 import numpy as np
 import torchvision.transforms as T
 import json
+import torch
 
 
 class Cityscapes(Dataset):
@@ -56,8 +57,8 @@ class Cityscapes(Dataset):
         lbl_file_name = self.lbl_entry_names[index]
         img_path = os.path.join(self.path, 'images', img_file_name)
         lbl_path = os.path.join(self.path, 'labels', lbl_file_name)
-        img = self.img_transformer(Image.open(img_path)).to(self.device)
-        lbl = self.lbl_transformer(Image.open(lbl_path)).to(self.device)
+        img = self.img_transformer(Image.open(img_path)).to(torch.float32).to(self.device)
+        lbl = self.lbl_transformer(Image.open(lbl_path)).to(torch.float32).to(self.device)
         return img, lbl
 
     def __len__(self):
