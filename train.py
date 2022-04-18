@@ -185,12 +185,14 @@ def main(params):
     args = parser.parse_args(params)
 
     # Create HERE datasets instance
-    dataset_train = dataset.Cityscapes('/content/drive/MyDrive/MLDL/Cityscapes/train')
-    dataset_val = dataset.Cityscapes('/content/drive/MyDrive/MLDL/Cityscapes/val')
+    cityscapes_path = '/content/drive/MyDrive/MLDL/Cityscapes/'
+    new_size = (512, 1024,)
+    dataset_train = dataset.Cityscapes(cityscapes_path, new_size, 'train', 'cuda')
+    dataset_val = dataset.Cityscapes(cityscapes_path, new_size, 'val', 'cuda')
 
     # Define HERE your dataloaders:
-    dataloader_train = DataLoader(dataset_train, batch_size=4, shuffle=True, num_workers=4)
-    dataloader_val = DataLoader(dataset_val, batch_size=4, shuffle=True, num_workers=4)
+    dataloader_train = DataLoader(dataset_train, batch_size=4, shuffle=True)
+    dataloader_val = DataLoader(dataset_val, batch_size=4, shuffle=True)
 
     # build model
     os.environ['CUDA_VISIBLE_DEVICES'] = args.cuda
