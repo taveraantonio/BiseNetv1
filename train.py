@@ -104,7 +104,7 @@ def train(args, model, optimizer, dataloader_train, dataloader_val):
     if args.loss == 'dice':
         loss_func = DiceLoss()
     elif args.loss == 'crossentropy':
-        loss_func = torch.nn.CrossEntropyLoss(ignore_index=19)
+        loss_func = torch.nn.CrossEntropyLoss()
     max_miou = 0
     step = 0
     for epoch in range(args.num_epochs):
@@ -190,7 +190,7 @@ def main(params):
     dataset_val = dataset.Cityscapes(cityscapes_path, new_size, 'val', 'cuda')
 
     # Define HERE your dataloaders:
-    dataloader_train = DataLoader(dataset_train, batch_size=4, shuffle=True)
+    dataloader_train = DataLoader(dataset_train, batch_size=args.batch_size, shuffle=True)
     dataloader_val = DataLoader(dataset_val, batch_size=1, shuffle=True)
 
     # build model
@@ -239,10 +239,9 @@ def main(params):
 
 if __name__ == '__main__':
     params = [
-        '--num_epochs', '1',
+        '--num_epochs', '50',
         '--learning_rate', '2.5e-2',
         '--data', './data/...',
-        '--num_workers', '8',
         '--num_classes', '20',
         '--cuda', '0',
         '--batch_size', '8',
