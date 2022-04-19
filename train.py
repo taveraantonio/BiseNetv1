@@ -192,7 +192,7 @@ def main(params):
 
     # Define HERE your dataloaders:
     dataloader_train = DataLoader(dataset_train, batch_size=4, shuffle=True)
-    dataloader_val = DataLoader(dataset_val, batch_size=4, shuffle=True)
+    dataloader_val = DataLoader(dataset_val, batch_size=1, shuffle=True)
 
     # build model
     os.environ['CUDA_VISIBLE_DEVICES'] = args.cuda
