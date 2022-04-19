@@ -47,8 +47,6 @@ def val(args, model, dataloader, final_test):
         precision_record = []
         hist = np.zeros((args.num_classes, args.num_classes))
         for i, (data, label) in enumerate(dataloader):
-            if i>=5:
-                break
             label = label.type(torch.LongTensor)
             data = data.cuda()
             label = label.long().cuda()
@@ -60,8 +58,8 @@ def val(args, model, dataloader, final_test):
 
             # get RGB label image
             label = label.squeeze()
-            if args.loss == 'dice':
-                label = reverse_one_hot(label)
+            #if args.loss == 'dice':
+            label = reverse_one_hot(label)
             label = np.array(label.cpu())
 
             # compute per pixel accuracy
@@ -116,10 +114,8 @@ def train(args, model, optimizer, dataloader_train, dataloader_val):
         tq.set_description('epoch %d, lr %f' % (epoch, lr))
         loss_record = []
         for i, (data, label) in enumerate(dataloader_train):
-            if i>=5:
-                break
             data = data.cuda()
-            label = label.long().cuda()
+            label = label.cuda()
             optimizer.zero_grad()
             
             with amp.autocast():
@@ -230,11 +226,13 @@ def main(params):
     val(args, model, dataloader_val, True)
     
     # save model in wandb and close connection
-    model_name = "trained_bisenet"
-    saved_model = wandb.Artifact(model_name, type="model")
-    saved_model.add_file(os.path.join(args.save_model_path, 'best_dice_loss.pth'), name=model_name)
-    print("Saving data to WandB...")
-    run.log_artifact(saved_model)
+    save_path = os.path.join(args.save_model_path, 'best_dice_loss.pth')
+    if os.path.exists(save_path):
+      model_name = "trained_bisenet"
+      saved_model = wandb.Artifact(model_name, type="model")
+      saved_model.add_file(save_path, name=model_name)
+      print("Saving data to WandB...")
+      run.log_artifact(saved_model)
     run.finish()
     print("... Run Complete")
 

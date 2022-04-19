@@ -36,7 +36,7 @@ class Cityscapes(Dataset):
     def load_transformers(self):
         image_to_numpy = lambda image: self.labels_map[np.array(image, dtype=np.uint8)]
         one_hot_targets = np.eye(20)
-        one_hot_encoder = lambda image: one_hot_targets(image)
+        one_hot_encoder = lambda image: one_hot_targets[image]
         self.lbl_transformer = T.Compose([
             T.Resize((512, 1024)),
             T.Lambda(image_to_numpy),
