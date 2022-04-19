@@ -6,6 +6,8 @@ import torchvision.transforms as T
 import json
 import torch
 
+from utils import one_hot_it
+
 
 class Cityscapes(Dataset):
     def __init__(self, path, image_size, task, device):
@@ -33,9 +35,12 @@ class Cityscapes(Dataset):
 
     def load_transformers(self):
         image_to_numpy = lambda image: self.labels_map[np.array(image, dtype=np.uint8)]
+        one_hot_targets = np.eye(20)
+        one_hot_encoder = lambda image: one_hot_targets(image)
         self.lbl_transformer = T.Compose([
             T.Resize((512, 1024)),
             T.Lambda(image_to_numpy),
+            T.Lambda(one_hot_encoder),
             T.ToTensor()
         ])
         self.img_transformer = T.Compose([
@@ -55,7 +60,7 @@ class Cityscapes(Dataset):
         img_path = os.path.join(self.path, 'images', img_file_name)
         lbl_path = os.path.join(self.path, 'labels', lbl_file_name)
         img = self.img_transformer(Image.open(img_path)).to(torch.float32).to(self.device)
-        lbl = self.lbl_transformer(Image.open(lbl_path)).to(torch.float32).to(self.device)[0]
+        lbl = self.lbl_transformer(Image.open(lbl_path)).to(torch.float32).to(self.device)
         return img, lbl
 
     def __len__(self):

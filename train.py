@@ -47,6 +47,8 @@ def val(args, model, dataloader, final_test):
         precision_record = []
         hist = np.zeros((args.num_classes, args.num_classes))
         for i, (data, label) in enumerate(dataloader):
+            if i>=5:
+                break
             label = label.type(torch.LongTensor)
             data = data.cuda()
             label = label.long().cuda()
@@ -104,7 +106,7 @@ def train(args, model, optimizer, dataloader_train, dataloader_val):
     if args.loss == 'dice':
         loss_func = DiceLoss()
     elif args.loss == 'crossentropy':
-        loss_func = torch.nn.CrossEntropyLoss(ignore_index=255)
+        loss_func = torch.nn.CrossEntropyLoss(ignore_index=19)
     max_miou = 0
     step = 0
     for epoch in range(args.num_epochs):
@@ -114,7 +116,8 @@ def train(args, model, optimizer, dataloader_train, dataloader_val):
         tq.set_description('epoch %d, lr %f' % (epoch, lr))
         loss_record = []
         for i, (data, label) in enumerate(dataloader_train):
-            
+            if i>=5:
+                break
             data = data.cuda()
             label = label.long().cuda()
             optimizer.zero_grad()
@@ -238,7 +241,7 @@ def main(params):
 
 if __name__ == '__main__':
     params = [
-        '--num_epochs', '1000',
+        '--num_epochs', '1',
         '--learning_rate', '2.5e-2',
         '--data', './data/...',
         '--num_workers', '8',
