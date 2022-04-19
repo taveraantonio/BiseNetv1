@@ -11,9 +11,9 @@ import torchvision
 CLASSES = [
   'road', 'sidewalk', 'building', 'wall', 'fence', 'pole', 'light', 'sign', 
   'vegetation', 'terrain', 'sky', 'person', 'rider', 'car', 'truck', 'bus', 
-  'train', 'motocycle', 'bicycle', 'void'
+  'train', 'motocycle', 'bicycle'
 ]
-IDS = list(range(len(CLASSES) - 1)) + [255]
+IDS = list(range(len(CLASSES) - 1))
 WANDB_PROJECT = "bisenet"
 WANDB_ENTITY = "spaghetti-code"
 
