@@ -126,7 +126,7 @@ def reverse_one_hot(image):
 	#     for j in range(0, h):
 	#         index, value = max(enumerate(image[i, j, :]), key=operator.itemgetter(1))
 	#         x[i, j] = index
-	image = image.permute(1, 2, 0)
+	image = image.permute(0, 2, 3, 1)
 	x = torch.argmax(image, dim=-1)
 	return x
 
