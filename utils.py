@@ -159,7 +159,7 @@ def colour_code_segmentation(image, label_values):
 
 def compute_global_accuracy(pred, label):
 	pred = pred.flatten()
-	label = reverse_one_hot(label).flatten()
+	label = label.flatten()
 	total = len(label)
 	count = 0.0
 	for i in range(total):
