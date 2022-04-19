@@ -245,7 +245,7 @@ if __name__ == '__main__':
         '--learning_rate', '2.5e-2',
         '--data', './data/...',
         '--num_workers', '8',
-        '--num_classes', '19',
+        '--num_classes', '20',
         '--cuda', '0',
         '--batch_size', '8',
         '--save_model_path', './checkpoints_101_sgd',
