@@ -190,7 +190,7 @@ def main(params):
     dataset_val = dataset.Cityscapes(cityscapes_path, new_size, 'val', 'cuda')
 
     # Define HERE your dataloaders:
-    dataloader_train = DataLoader(dataset_train, batch_size=args.batch_size, shuffle=True)
+    dataloader_train = DataLoader(dataset_train, batch_size=args.batch_size, shuffle=True, drop_last=True)
     dataloader_val = DataLoader(dataset_val, batch_size=1, shuffle=True)
 
     # build model
