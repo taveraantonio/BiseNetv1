@@ -136,6 +136,7 @@ def train(args, model, optimizer, dataloader_train, dataloader_val):
             loss_record.append(loss.item())
         tq.close()
         loss_train_mean = np.mean(loss_record)
+        wandb.log({"loss": loss_train_mean})
         writer.add_scalar('epoch/loss_epoch_train', float(loss_train_mean), epoch)
         print('loss for train : %f' % (loss_train_mean))
         if epoch % args.checkpoint_step == 0 and epoch != 0:
@@ -219,6 +220,7 @@ def main(params):
     # wandb logging init
     wandb.login()
     run = wandb.init(project=utils.WANDB_PROJECT, entity=utils.WANDB_ENTITY, job_type="train", config=args)
+    wandb.watch(model, log_freq=args.batch_size)
     
     # train
     train(args, model, optimizer, dataloader_train, dataloader_val)
