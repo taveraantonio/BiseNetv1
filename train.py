@@ -58,8 +58,8 @@ def val(args, model, dataloader, final_test):
 
             # get RGB label image
             label = label.squeeze()
-            #if args.loss == 'dice':
-            label = reverse_one_hot(label)
+            if args.loss == 'dice':
+                label = reverse_one_hot(label)
             label = np.array(label.cpu())
 
             # compute per pixel accuracy
@@ -104,7 +104,7 @@ def train(args, model, optimizer, dataloader_train, dataloader_val):
     if args.loss == 'dice':
         loss_func = DiceLoss()
     elif args.loss == 'crossentropy':
-        loss_func = torch.nn.CrossEntropyLoss()
+        loss_func = torch.nn.CrossEntropyLoss(ignore_index=255)
     max_miou = 0
     step = 0
     for epoch in range(args.epoch_start_i, args.num_epochs):
@@ -244,7 +244,7 @@ if __name__ == '__main__':
         '--num_epochs', '50',
         '--learning_rate', '2.5e-2',
         '--data', './data/...',
-        '--num_classes', '20',
+        '--num_classes', '19',
         '--cuda', '0',
         '--batch_size', '8',
         '--save_model_path', './checkpoints_101_sgd',

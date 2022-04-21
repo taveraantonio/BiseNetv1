@@ -28,19 +28,13 @@ class Cityscapes(Dataset):
 
     def load_labels_map(self):
         with open(os.path.join(self.path, 'info.json'), 'r') as f:
-            j = json.load(f)
-        self.labels_map = np.array(j['label2train'], dtype=np.uint8)[:, 1]
-        self.nb_classes = int(j['classes'])
-        self.labels_map[self.labels_map == 255] = self.nb_classes
+            self.labels_map = np.array(json.load(f)['label2train'], dtype=np.uint8)[:, 1]
 
     def load_transformers(self):
         image_to_numpy = lambda image: self.labels_map[np.array(image, dtype=np.uint8)]
-        one_hot_targets = np.eye(20)
-        one_hot_encoder = lambda image: one_hot_targets[image]
         self.lbl_transformer = T.Compose([
             T.Resize((512, 1024)),
             T.Lambda(image_to_numpy),
-            T.Lambda(one_hot_encoder),
             T.ToTensor()
         ])
         self.img_transformer = T.Compose([
