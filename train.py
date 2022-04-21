@@ -115,7 +115,7 @@ def train(args, model, optimizer, dataloader_train, dataloader_val):
         loss_record = []
         for i, (data, label) in enumerate(dataloader_train):
             data = data.cuda()
-            label = label.cuda()
+            label = label.long().cuda()
             optimizer.zero_grad()
             
             with amp.autocast():
@@ -248,7 +248,7 @@ if __name__ == '__main__':
         '--cuda', '0',
         '--batch_size', '8',
         '--save_model_path', './checkpoints_101_sgd',
-        '--context_path', 'resnet101',  # set resnet18 or resnet101, only support resnet18 and resnet101
+        '--context_path', 'resnet18',  # set resnet18 or resnet101, only support resnet18 and resnet101
         '--optimizer', 'sgd',
 
     ]

@@ -6,9 +6,6 @@ import torchvision.transforms as T
 import json
 import torch
 
-from utils import one_hot_it
-
-
 class Cityscapes(Dataset):
     def __init__(self, path, image_size, task, device):
         """
@@ -54,7 +51,7 @@ class Cityscapes(Dataset):
         img_path = os.path.join(self.path, 'images', img_file_name)
         lbl_path = os.path.join(self.path, 'labels', lbl_file_name)
         img = self.img_transformer(Image.open(img_path)).to(torch.float32).to(self.device)
-        lbl = self.lbl_transformer(Image.open(lbl_path)).to(torch.float32).to(self.device)
+        lbl = self.lbl_transformer(Image.open(lbl_path)).to(torch.float32).to(self.device)[0]
         return img, lbl
 
     def __len__(self):
