@@ -6,7 +6,7 @@ import torchvision.transforms as T
 import json
 import torch
 
-class Cityscapes(Dataset):
+class SegmentationDataset(Dataset):
     def __init__(self, path, image_size, task, device):
         """
         Inputs:
@@ -30,9 +30,9 @@ class Cityscapes(Dataset):
     def load_transformers(self):
         image_to_numpy = lambda image: self.labels_map[np.array(image, dtype=np.uint8)]
         self.lbl_transformer = T.Compose([
-            T.Resize((512, 1024)),
+            T.Resize((self.image_size)),
             T.Lambda(image_to_numpy),
-            T.ToTensor()
+            torch.from_numpy
         ])
         self.img_transformer = T.Compose([
             T.Resize(self.image_size),
@@ -51,7 +51,7 @@ class Cityscapes(Dataset):
         img_path = os.path.join(self.path, 'images', img_file_name)
         lbl_path = os.path.join(self.path, 'labels', lbl_file_name)
         img = self.img_transformer(Image.open(img_path)).to(torch.float32).to(self.device)
-        lbl = self.lbl_transformer(Image.open(lbl_path)).to(torch.float32).to(self.device)[0]
+        lbl = self.lbl_transformer(Image.open(lbl_path)).to(torch.float32).long().to(self.device) 
         return img, lbl
 
     def __len__(self):

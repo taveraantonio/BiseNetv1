@@ -1,17 +1,17 @@
-import argparse
-from torch.utils.data import DataLoader
 import os
-from model.build_BiSeNet import BiSeNet
+import argparse
+import numpy as np
 import torch
+import torch.cuda.amp as amp
+from torch.utils.data import DataLoader
+from model.build_BiSeNet import BiSeNet
 from dataset import dataset
 from tensorboardX import SummaryWriter
 from tqdm import tqdm
-import numpy as np
 from utils import poly_lr_scheduler
 from utils import reverse_one_hot, compute_global_accuracy, fast_hist, \
     per_class_iu
 from loss import DiceLoss
-import torch.cuda.amp as amp
 import wandb
 import utils
 
@@ -41,18 +41,18 @@ def val(args, model, dataloader, final_test):
     model_res_table = wandb.Table(columns=main_columns)
     
     print('start val!')
-    # label_info = get_label_info(csv_path)
     with torch.no_grad():
         model.eval()
         precision_record = []
         hist = np.zeros((args.num_classes, args.num_classes))
         for i, (data, label) in enumerate(dataloader):
             label = label.type(torch.LongTensor)
-            data = data.cuda()
-            label = label.long().cuda()
+            data = data
+            label = label.long()
 
             # get RGB predict image
             predict = model(data).squeeze()
+            predict = predict.squeeze()
             predict = reverse_one_hot(predict)
             predict = np.array(predict.cpu())
 
@@ -82,8 +82,8 @@ def val(args, model, dataloader, final_test):
         precision = np.mean(precision_record)
         miou_list = per_class_iu(hist)
         miou = np.mean(miou_list)
-        print('precision per pixel for test: %.3f' % precision)
-        print('mIoU for validation: %.3f' % miou)
+        print(f'precision per pixel for test: {precision:.3f}')
+        print(f'mIoU for validation: {miou:.3f}')
         print(f'mIoU per class: {miou_list}')
         
         # upload wandb table
@@ -98,24 +98,22 @@ def val(args, model, dataloader, final_test):
 
 def train(args, model, optimizer, dataloader_train, dataloader_val):
     writer = SummaryWriter(comment=''.format(args.optimizer, args.context_path))
-
     scaler = amp.GradScaler()
-
     if args.loss == 'dice':
         loss_func = DiceLoss()
     elif args.loss == 'crossentropy':
         loss_func = torch.nn.CrossEntropyLoss(ignore_index=255)
     max_miou = 0
     step = 0
-    for epoch in range(args.epoch_start_i, args.num_epochs):
+    for epoch in range(args.init_epoch, args.num_epochs):
         lr = poly_lr_scheduler(optimizer, args.learning_rate, iter=epoch, max_iter=args.num_epochs)
         model.train()
         tq = tqdm(total=len(dataloader_train) * args.batch_size)
         tq.set_description('epoch %d, lr %f' % (epoch, lr))
         loss_record = []
         for i, (data, label) in enumerate(dataloader_train):
-            data = data.cuda()
-            label = label.long().cuda()
+            data = data
+            label = label.long()
             optimizer.zero_grad()
             
             with amp.autocast():
@@ -139,31 +137,27 @@ def train(args, model, optimizer, dataloader_train, dataloader_val):
         wandb.log({"loss": loss_train_mean})
         writer.add_scalar('epoch/loss_epoch_train', float(loss_train_mean), epoch)
         print('loss for train : %f' % (loss_train_mean))
-        if epoch % args.checkpoint_step == 0 and epoch != 0:
-            import os
-            if not os.path.isdir(args.save_model_path):
-                os.mkdir(args.save_model_path)
-            torch.save(model.module.state_dict(),
-                       os.path.join(args.save_model_path, 'latest_dice_loss.pth'))
+        is_right_iteration = lambda i, step: (i % step) == (step - 1)
+        if is_right_iteration(epoch, args.checkpoint_step) and args.model_file_name is not None:
+            model_path = os.path.join(args.saved_models_path, args.model_file_name)
+            torch.save(model.module.state_dict(), model_path) 
 
-        if epoch % args.validation_step == 0 and epoch != 0:
+        if is_right_iteration(epoch, args.validation_step) and args.model_file_name is not None:
             precision, miou = val(args, model, dataloader_val, False)
             if miou > max_miou:
                 max_miou = miou
-                import os 
-                os.makedirs(args.save_model_path, exist_ok=True)
-                torch.save(model.module.state_dict(),
-                           os.path.join(args.save_model_path, 'best_dice_loss.pth'))
+                best_model_path = os.path.join(args.saved_models_path, 'best_'+args.model_file_name)
+                torch.save(model.module.state_dict(), best_model_path) 
             writer.add_scalar('epoch/precision_val', precision, epoch)
-            writer.add_scalar('epoch/miou val', miou, epoch)
+            writer.add_scalar('epoch/miou_val', miou, epoch)
 
 
-def main(params):
+def main():
     # basic parameters
     parser = argparse.ArgumentParser()
     parser.add_argument('--num_epochs', type=int, default=300, help='Number of epochs to train for')
-    parser.add_argument('--epoch_start_i', type=int, default=0, help='Start counting epochs from this number')
-    parser.add_argument('--checkpoint_step', type=int, default=10, help='How often to save checkpoints (epochs)')
+    parser.add_argument('--init_epoch', type=int, default=0, help='Start counting epochs from this number')
+    parser.add_argument('--checkpoint_step', type=int, default=1, help='How often to save checkpoints (epochs)')
     parser.add_argument('--validation_step', type=int, default=10, help='How often to perform validation (epochs)')
     parser.add_argument('--dataset', type=str, default="Cityscapes", help='Dataset you are using.')
     parser.add_argument('--crop_height', type=int, default=512, help='Height of cropped/resized input image to network')
@@ -173,32 +167,36 @@ def main(params):
                         help='The context path model you are using, resnet18, resnet101.')
     parser.add_argument('--learning_rate', type=float, default=0.01, help='learning rate used for train')
     parser.add_argument('--data', type=str, default='', help='path of training data')
-    parser.add_argument('--num_workers', type=int, default=4, help='num of workers')
+    parser.add_argument('--num_workers', type=int, default=1, help='num of workers')
     parser.add_argument('--num_classes', type=int, default=32, help='num of object classes (with void)')
     parser.add_argument('--cuda', type=str, default='0', help='GPU ids used for training')
     parser.add_argument('--use_gpu', type=bool, default=True, help='whether to user gpu for training')
-    parser.add_argument('--pretrained_model_path', type=str, default=None, help='path to pretrained model')
-    parser.add_argument('--save_model_path', type=str, default=None, help='path to save model')
+    parser.add_argument('--model_file_name', type=str, default=None, help='path to pretrained model')
+    parser.add_argument('--saved_models_path', type=str, default=None, help='path to save model')
     parser.add_argument('--optimizer', type=str, default='rmsprop', help='optimizer, support rmsprop, sgd, adam')
     parser.add_argument('--loss', type=str, default='crossentropy', help='loss function, dice or crossentropy')
 
-    args = parser.parse_args(params)
+    args = parser.parse_args()
 
-    # Create HERE datasets instance
-    cityscapes_path = '/content/drive/MyDrive/MLDL/Cityscapes/'
-    new_size = (512, 1024,)
-    dataset_train = dataset.Cityscapes(cityscapes_path, new_size, 'train', 'cuda')
-    dataset_val = dataset.Cityscapes(cityscapes_path, new_size, 'val', 'cuda')
-
-    # Define HERE your dataloaders:
-    dataloader_train = DataLoader(dataset_train, batch_size=args.batch_size, shuffle=True, drop_last=True)
-    dataloader_val = DataLoader(dataset_val, batch_size=1, shuffle=True)
 
     # build model
     os.environ['CUDA_VISIBLE_DEVICES'] = args.cuda
     model = BiSeNet(args.num_classes, args.context_path)
     if torch.cuda.is_available() and args.use_gpu:
-        model = torch.nn.DataParallel(model).cuda()
+        device = torch.device('cuda')
+    else:
+        device = torch.device('cpu')
+    model = torch.nn.DataParallel(model, output_device = device)
+    
+    # Create datasets instance
+    dataset_path = os.path.join(args.data, args.dataset)
+    new_size = (args.crop_height, args.crop_width)
+    dataset_train = dataset.SegmentationDataset(dataset_path, new_size, 'train', device)
+    dataset_val = dataset.SegmentationDataset(dataset_path, new_size, 'val', device)
+
+    # Define your dataloaders:
+    dataloader_train = DataLoader(dataset_train, batch_size=args.batch_size, shuffle=True, drop_last=True)
+    dataloader_val = DataLoader(dataset_val, batch_size=1, shuffle=True)
 
     # build optimizer
     if args.optimizer == 'rmsprop':
@@ -212,10 +210,18 @@ def main(params):
         return None
 
     # load pretrained model if exists
-    if args.pretrained_model_path is not None:
-        print('load model from %s ...' % args.pretrained_model_path)
-        model.module.load_state_dict(torch.load(args.pretrained_model_path))
-        print('Done!')
+    if args.saved_models_path is not None:
+        os.makedirs(args.saved_models_path, exist_ok=True)
+    if args.model_file_name is not None:
+        assert args.saved_models_path is not None, 'If you specify model file name, you must specify a directory'
+        model_path = os.path.join(args.saved_models_path, args.model_file_name)
+        if os.path.exists(model_path):
+            print(f'Loading state from file: {model_path}')            
+            model.module.load_state_dict(torch.load(model_path))
+        else:
+            print(f'Could not find model {model_path}, starting from zero')
+    else:
+        print('[WARNING] Model name was not specified. No data will be stored after training')
 
     # wandb logging init
     wandb.login()
@@ -228,28 +234,17 @@ def main(params):
     val(args, model, dataloader_val, True)
     
     # save model in wandb and close connection
-    save_path = os.path.join(args.save_model_path, 'best_dice_loss.pth')
-    if os.path.exists(save_path):
-      model_name = "trained_bisenet"
-      saved_model = wandb.Artifact(model_name, type="model")
-      saved_model.add_file(save_path, name=model_name)
-      print("Saving data to WandB...")
-      run.log_artifact(saved_model)
+    if args.saved_models_path is not None and args.model_file_name is not None:
+        best_model_path = os.path.join(args.saved_models_path, 'best_'+args.model_file_name)
+        if os.path.exists(best_model_path ):
+            model_name = args.model_file_name
+            saved_model = wandb.Artifact(model_name, type="model")
+            saved_model.add_file(save_path, name=model_name)
+            print("Saving data to WandB...")
+            run.log_artifact(saved_model)
     run.finish()
-    print("... Run Complete")
+    print("Completed run")
 
 
 if __name__ == '__main__':
-    params = [
-        '--num_epochs', '50',
-        '--learning_rate', '2.5e-2',
-        '--data', './data/...',
-        '--num_classes', '19',
-        '--cuda', '0',
-        '--batch_size', '8',
-        '--save_model_path', './checkpoints_101_sgd',
-        '--context_path', 'resnet18',  # set resnet18 or resnet101, only support resnet18 and resnet101
-        '--optimizer', 'sgd',
-
-    ]
-    main(params)
+    main()
