@@ -1,0 +1,4 @@
+**/__pycache__
+runs/
+wandb/
+checkpoints_101_sgd/
